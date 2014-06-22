@@ -25,7 +25,6 @@
 #include <errno.h>
 #include <string.h>
 int main(int argc, char **argv) {
-    std::cout<<std::hex<<server::parseIP("127.0.0.1")<<std::endl;
     errno=0;
     if(server::Init("127.0.0.1",8080)) {
         std::cout<<"OOPS: "<<strerror(errno)<<std::endl;

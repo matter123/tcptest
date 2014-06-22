@@ -11,9 +11,9 @@ build: clean $(COBJECTS) $(CPPOBJECTS) link
 WFLAGSON=-Wall -Wextra -Werror=return-type -Wshadow -Wundef -Wframe-larger-than=16384 -Wdeprecated \
 -Wredundant-decls
 WFLAGSOFF=-Wno-sequence-point -Wno-unused-parameter -Wno-sign-compare -Wno-pointer-arith
-FFLAGS=-fno-omit-frame-pointer -fno-stack-protector
+FFLAGS=-fno-omit-frame-pointer
 CFLAGS=-O3 -std=c11 $(WFLAGSON) $(WFLAGSOFF) $(FFLAGS)
-CPPFLAGS=-O3 -std=c++11 $(WFLAGSON) $(WFLAGSOFF) $(FFLAGS)
+CPPFLAGS=-O0 -std=c++11 $(WFLAGSON) $(WFLAGSOFF) $(FFLAGS)
 
 clean:
 	@echo Cleaning workspace

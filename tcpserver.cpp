@@ -20,31 +20,58 @@
 #include <netinet/ip.h>
 #include <errno.h>
 #include <string.h>
-#include <cctype>
-#include <cstdlib>
+#include <ctype.h>
+#include <stdlib.h>
 #include <iostream>
+#include <netdb.h>
 namespace server {
 	static int sock;
-	static sockaddr_in info;
-	int Init(const char *ip,int port) {
-		if((sock=socket(AF_INET,SOCK_STREAM,0))==-1) {
+	addrinfo *info;
+	int Init(const char *addr,int port) {
+		addrinfo hints, *res;
+		memset(&hints,0,sizeof(addrinfo));
+		hints.ai_family = AF_UNSPEC;
+		hints.ai_socktype = SOCK_STREAM;
+		hints.ai_flags = AI_PASSIVE;
+		hints.ai_protocol = 0;
+		hints.ai_canonname = NULL;
+		hints.ai_addrlen = 0;
+		hints.ai_addr = NULL;
+		hints.ai_next = NULL;
+		char buf[6];
+		sprintf(buf,"%d",port);
+		printf("%s:%s\n",addr,buf);
+		int retv=getaddrinfo(addr,buf,&hints,&res);
+		if(retv) {
+			std::cout<<gai_strerror(retv)<<std::endl;
+			freeaddrinfo(res);
+			errno=EINVAL;
 			return errno;
 		}
-		memset(&info,0,sizeof(sockaddr_in));
-		info.sin_family=AF_INET;
-		info.sin_port=htons(port);
-		errno=0;
-		info.sin_addr.s_addr=htonl(parseIP(ip));
-		if(errno) {
+		info=res;
+		while(info) {
+			if((sock=socket(info->ai_family,info->ai_socktype,info->ai_protocol))==-1) {
+				printf("%s\n",strerror(errno));
+				info=info->ai_next;
+				continue;
+			}
+			if(bind(sock,info->ai_addr,info->ai_addrlen)) {
+				printf("%s\n",strerror(errno));
+				close(sock);
+				info=info->ai_next;
+				continue;
+			}
+			break;
+		}
+		if(!info) {
+			errno=EINVAL;
 			return errno;
 		}
-		if(bind(sock,reinterpret_cast<const struct sockaddr *>(&info),
-			sizeof(sockaddr_in))) {
-			return errno;
-		}
+		freeaddrinfo(res);
 		if(listen(sock,20)) {
 			return errno;
 		}
+		std::cout<<std::flush;
 		return 0;
 	}
 	uint32_t parseIP(const char *ip) {
@@ -78,13 +105,16 @@ namespace server {
 		int c_sock=accept(sock,reinterpret_cast<sockaddr *>(&c_info),
 		&temp);
 		if(c_sock==-1) {
+			std::cout<<strerror(errno)<<std::endl;
 			return NULL;
 		}
 		tcpclient *client=new tcpclient(c_sock,c_info);
+		std::cout<<"hello client"<<std::endl;
 		return client;
 	}
 	void quit_client(tcpclient *client) {
 		client->end();
 		delete client;
+		std::cout<<"bye bye client"<<std::endl;
 	}
 }

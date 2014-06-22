@@ -19,6 +19,7 @@
 #include <sys/socket.h>
 #include <netinet/ip.h>
 #include <errno.h>
+#include <string.h>
 namespace server{
     void tcpclient::begin() {
     	connect(this->sock,reinterpret_cast<const struct sockaddr *>
@@ -34,16 +35,24 @@ namespace server{
     	return pwrite(this->sock,buf,nbyte,offset);
     }
     ssize_t tcpclient::write(const void *buf, size_t nbyte) {
-    	return ::write(this->sock,buf,nbyte);
+        errno=0;
+        ssize_t s=::write(this->sock,buf,nbyte);
+        if(errno) {
+            std::cout<<strerror(errno)<<std::endl;
+        }
+        return s;
     }
     void tcpclient::end() {
-    	close(this->sock);
+        if(this->sock!=-1) {
+    	   close(this->sock);
+           this->sock=-1;
+        }
     }
     std::streamsize tcpclient::xsputn (const char* s, std::streamsize n) {
     	return write((void *)s,n);
     }
     tcpclient::tcpclient(int _sock,sockaddr_in _info) {
     	this->sock=_sock;
-    	this->info=_info;
+    	memcpy(&(this->info),&_info,sizeof(sockaddr_in));
     }
 }
